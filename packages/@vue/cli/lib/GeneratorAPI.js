@@ -17,7 +17,7 @@ const mergeArrayWithDedupe = (a, b) => Array.from(new Set([...a, ...b]))
 function pruneObject (obj) {
   if (typeof obj === 'object') {
     for (const k in obj) {
-      if (!Object.prototype.hasOwnProperty.call(obj, k)) {
+      if (!obj.hasOwnProperty(k)) {
         continue
       }
 
@@ -168,8 +168,8 @@ class GeneratorAPI {
    * @param {string} version - Plugin version. Defaults to ''
    * @return {boolean}
    */
-  hasPlugin (id, versionRange) {
-    return this.generator.hasPlugin(id, versionRange)
+  hasPlugin (id, version) {
+    return this.generator.hasPlugin(id, version)
   }
 
   /**
@@ -219,15 +219,12 @@ class GeneratorAPI {
    *    that dependency fields are always deep merged regardless of this option.
    * @param {boolean} [options.warnIncompatibleVersions=true] Output warning
    *    if two dependency version ranges don't intersect.
-   * @param {boolean} [options.forceOverwrite=false] force using the dependency
-   * version provided in the first argument, instead of trying to get the newer ones
    */
   extendPackage (fields, options = {}) {
     const extendOptions = {
       prune: false,
       merge: true,
-      warnIncompatibleVersions: true,
-      forceOverwrite: false
+      warnIncompatibleVersions: true
     }
 
     // this condition statement is added for compatibility reason, because
@@ -286,7 +283,7 @@ class GeneratorAPI {
       this._injectFileMiddleware(async (files) => {
         const data = this._resolveData(additionalData)
         const globby = require('globby')
-        const _files = await globby(['**/*'], { cwd: source, dot: true })
+        const _files = await globby(['**/*'], { cwd: source })
         for (const rawPath of _files) {
           const targetPath = rawPath.split('/').map(filename => {
             // dotfiles are ignored when published to npm, therefore in templates
@@ -460,18 +457,7 @@ function extractCallDir () {
   const obj = {}
   Error.captureStackTrace(obj)
   const callSite = obj.stack.split('\n')[3]
-
-  // the regexp for the stack when called inside a named function
-  const namedStackRegExp = /\s\((.*):\d+:\d+\)$/
-  // the regexp for the stack when called inside an anonymous
-  const anonymousStackRegExp = /at (.*):\d+:\d+$/
-
-  let matchResult = callSite.match(namedStackRegExp)
-  if (!matchResult) {
-    matchResult = callSite.match(anonymousStackRegExp)
-  }
-
-  const fileName = matchResult[1]
+  const fileName = callSite.match(/\s\((.*):\d+:\d+\)$/)[1]
   return path.dirname(fileName)
 }
 

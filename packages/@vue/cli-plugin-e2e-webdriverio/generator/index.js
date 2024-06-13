@@ -3,7 +3,7 @@ const { installedBrowsers } = require('@vue/cli-shared-utils')
 const applyTS = module.exports.applyTS = (api, invoking) => {
   api.extendPackage({
     devDependencies: {
-      '@types/mocha': require('../package.json').dependencies['@types/mocha']
+      '@types/mocha': '^8.0.1'
     }
   })
 
@@ -15,13 +15,13 @@ const applyTS = module.exports.applyTS = (api, invoking) => {
         const parsed = JSON.parse(tsconfig)
         const types = parsed.compilerOptions.types
         if (types) {
-          for (const t of ['mocha', '@wdio/mocha-framework', 'webdriverio/sync']) {
+          for (const t of ['mocha', '@wdio/mocha-framework', '@wdio/sync']) {
             if (!types.includes(t)) {
               types.push(t)
             }
           }
         }
-        files['tsconfig.json'] = JSON.stringify(parsed, null, 2) + '\n'
+        files['tsconfig.json'] = JSON.stringify(parsed, null, 2)
       }
     })
   }

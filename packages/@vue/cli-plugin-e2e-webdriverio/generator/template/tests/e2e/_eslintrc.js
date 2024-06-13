@@ -6,8 +6,6 @@ module.exports = {
     mocha: true
   },
   rules: {
-    'class-methods-use-this': 'off',
-    'max-len': 'off',
     strict: 'off'
   }
 }

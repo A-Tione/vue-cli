@@ -32,6 +32,10 @@ module.exports = cli => {
       const tsOptions = {
         classComponent: answers.tsClassComponent
       }
+      if (answers.eslintConfig === 'tslint') {
+        tsOptions.tsLint = true
+        tsOptions.lintOn = answers.lintOn
+      }
       if (answers.useTsWithBabel) {
         tsOptions.useTsWithBabel = true
       }

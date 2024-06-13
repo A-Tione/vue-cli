@@ -10,7 +10,7 @@
 
 `dist` 目录需要启动一个 HTTP 服务器来访问 (除非你已经将 `publicPath` 配置为了一个相对的值)，所以以 `file://` 协议直接打开 `dist/index.html` 是不会工作的。在本地预览生产环境构建最简单的方式就是使用一个 Node.js 静态文件服务器，例如 [serve](https://github.com/zeit/serve)：
 
-```bash
+``` bash
 npm install -g serve
 # -s 参数的意思是将其架设在 Single-Page Application 模式下
 # 这个模式会处理即将提到的路由问题
@@ -19,7 +19,7 @@ serve -s dist
 
 ### 使用 `history.pushState` 的路由
 
-如果你在 `history` 模式下使用 Vue Router，是无法搭配简单的静态文件服务器的。例如，如果你使用 Vue Router 为 `/todos/42/` 定义了一个路由，开发服务器已经配置了相应的 `localhost:3000/todos/42` 响应，但是一个为生产环境构建架设的简单的静态服务器会返回 404。
+如果你在 `history` 模式下使用 Vue Router，是无法搭配简单的静态文件服务器的。例如，如果你使用 Vue Router 为 `/todos/42/` 定义了一个路由，开发服务器已经配置了相应的 `localhost:3000/todos/42` 响应，但是一个为生产环境构建架设的简单的静态服务器会却会返回 404。
 
 为了解决这个问题，你需要配置生产环境服务器，将任何没有匹配到静态文件的请求回退到 `index.html`。Vue Router 的文档提供了[常用服务器配置指引](https://router.vuejs.org/zh/guide/essentials/history-mode.html)。
 
@@ -35,11 +35,11 @@ serve -s dist
 
 ### 云开发 CloudBase
 
-[云开发 CloudBase](https://cloudbase.net/?site=vuecli) 是一个云原生一体化的 Serverless 云平台，支持静态网站、容器等多种托管能力，并提供简便的部署工具 [CloudBase Framework](https://cloudbase.net/framework.html?site=vuecli)) 来一键部署应用。
+[云开发 CloudBase](https://cloudbase.net/) 是一个云原生一体化的 Serverless 云平台，支持静态网站、容器等多种托管能力，并提供简便的部署工具 [CloudBase Framework](https://cloudbase.net/framework.html) 来一键部署应用。
 
 #### 步骤一：安装云开发 CloudBase  CLI
 
-CloudBase  CLI 集成了  [CloudBase Framework](https://github.com/TencentCloudBase/cloudbase-framework?site=vuecli))  的能力，全局安装 CloudBase  CLI  请运行以下命令：
+CloudBase  CLI 集成了  [CloudBase Framework](https://github.com/TencentCloudBase/cloudbase-framework)  的能力，全局安装 CloudBase  CLI  请运行以下命令：
 
 ```
 npm install -g @cloudbase/cli
@@ -47,9 +47,10 @@ npm install -g @cloudbase/cli
 
 #### 步骤二：一键部署
 
-在项目根目录运行以下命令部署 Vue CLI 创建的应用，在部署之前可以先 [开通环境](https://console.cloud.tencent.com/tcb/env/index?tdl_anchor=ad&tdl_site=vuejs)
+在项目根目录运行以下命令部署 Vue CLI 创建的应用：
 
 ```
+cloudbase login
 cloudbase init --without-template
 cloudbase framework:deploy
 ```
@@ -68,14 +69,14 @@ cloudbase framework:deploy
 - 使用 `cloudbase init --template vue`  快速创建和部署一个包含 Serverless 云函数后端的 Vue 应用
 - 使用 `cloudbase init --template nuxt-ssr` 快速创建和部署一个包含  SSR 和 Serverless 云函数后端的 Vue 应用
 
-详细信息请查看  CloudBase Framework 的[部署项目示例](https://github.com/TencentCloudBase/cloudbase-framework?site=vuecli#%E9%A1%B9%E7%9B%AE%E7%A4%BA%E4%BE%8B)
+详细信息请查看  CloudBase Framework 的[部署项目示例](https://github.com/TencentCloudBase/cloudbase-framework#%E9%A1%B9%E7%9B%AE%E7%A4%BA%E4%BE%8B)
 
 ### GitHub Pages
 
 #### 手动推送更新
-
+ 
 1. 在 `vue.config.js` 中设置正确的 `publicPath`。
-
+    
    如果打算将项目部署到 `https://<USERNAME>.github.io/` 上, `publicPath` 将默认被设为 `"/"`，你可以忽略这个参数。
 
    如果打算将项目部署到 `https://<USERNAME>.github.io/<REPO>/` 上 (即仓库地址为 `https://github.com/<USERNAME>/<REPO>`)，可将 `publicPath` 设为 `"/<REPO>/"`。举个例子，如果仓库名字为“my-project”，那么 `vue.config.js` 的内容应如下所示：
@@ -90,7 +91,7 @@ cloudbase framework:deploy
 
 2. 在项目目录下，创建内容如下的 `deploy.sh` (可以适当地取消注释) 并运行它以进行部署：
 
-    ```bash{13,20,23}
+    ``` bash{13,20,23}
     #!/usr/bin/env sh
 
     # 当发生错误时中止脚本
@@ -99,7 +100,7 @@ cloudbase framework:deploy
     # 构建
     npm run build
 
-    # cd 到构建输出的目录下
+    # cd 到构建输出的目录下 
     cd dist
 
     # 部署到自定义域域名
@@ -125,7 +126,7 @@ cloudbase framework:deploy
 3. 生成一个拥有“repo”权限的 GitHub [访问令牌](https://help.github.com/cn/articles/creating-a-personal-access-token-for-the-command-line)。
 4. 授予 Travis 访问仓库的权限：`travis set GITHUB_TOKEN=xxx` (`xxx` 是第三步中的个人访问令牌)
 5. 在项目根目录下创建一个 `.travis.yml` 文件。
-
+   
     ```yaml
     language: node_js
     node_js:
@@ -143,7 +144,7 @@ cloudbase framework:deploy
     on:
       branch: master
     ```
-
+  
 6. 将 `.travis.yml` 文件推送到仓库来触发第一次构建。
 
 ### GitLab Pages
@@ -151,7 +152,7 @@ cloudbase framework:deploy
 根据 [GitLab Pages 文档](https://docs.gitlab.com/ee/user/project/pages/)的描述，所有的配置都在根目录中的`.gitlab-ci.yml` 文件中。下面的范例是一个很好的入门:
 
 ```yaml
-# .gitlab-ci.yml 文件应放在你仓库的根目录下
+# .gitlab-ci.yml 文件应放在你仓库的根目录下 
 
 pages: # 必须定义一个名为 pages 的 job
   image: node:latest
@@ -249,7 +250,7 @@ Firebase 将会询问有关初始化项目的一些问题。
 
 - 选择需要 Firebase CLI 的功能。 一定要选择 `hosting` 。
 - 选择默认的 Firebase 项目。
-- 将 `public` 目录设为 `dist` (或构建输出的位置) 这将会上传到 Firebase Hosting。
+- 将 `public` 目录设为 `dist` (或构建输出的位置) 这将会上传到 Firebase Hosting。 
 
 ```javascript
 // firebase.json
@@ -292,16 +293,16 @@ firebase deploy --only hosting
 
 请参考 [Firebase 文档](https://firebase.google.com/docs/hosting/deploying) 来获取更多细节。
 
-### Vercel
+### ZEIT Now
 
-[Vercel](https://vercel.com/) 是一个网站和无服务器 (Serverless) API 云平台，你可以使用你的个人域名 (或是免费的 `.vercel.app` URL) 部署你的 Vue 项目。
+[ZEIT Now](https://zeit.co/) 是一个网站和无服务器 (Serverless) API 云平台，你可以使用你的个人域名 (或是免费的 `.now.sh` URL) 部署你的 Vue 项目。
 
 #### 步骤一：安装 Now CLI
 
-要使用 [npm](https://www.npmjs.com/package/vercel) 安装其命令行界面，运行以下命令：
+要使用 [npm](https://www.npmjs.com/package/now) 安装其命令行界面，运行以下命令：
 
 ```
-npm install -g vercel
+npm install -g now
 ```
 
 #### 步骤二：部署
@@ -309,14 +310,14 @@ npm install -g vercel
 在项目根目录运行以下命令部署你的应用：
 
 ```
-vercel
+now
 ```
 
-**此外**，你还可以使用他们的 [GitHub](https://vercel.com/github) 或 [GitLab](https://vercel.com/gitlab) 集成服务。
+**此外**，你还可以使用他们的 [GitHub](https://zeit.co/github) 或 [GitLab](https://zeit.co/gitlab) 集成服务。
 
 大功告成！
 
-你的站点会开始部署，你将获得一个形如 [https://vue.now-examples.now.sh/](https://vue.now-examples.now.sh/) （或`.vercel.app`）的链接。
+你的站点会开始部署，你将获得一个形如 [https://vue.now-examples.now.sh/](https://vue.now-examples.now.sh/) 的链接。
 
 开箱即用地，请求会被自动改写到 `index.html` (除了自定义的静态文件) 并带有合适的缓存请求头。
 
@@ -328,7 +329,7 @@ vercel
 
 1. [安装 Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
 2. 创建 `static.json` 文件：
-
+   
     ```json
     {
       "root": "dist",
@@ -394,7 +395,7 @@ npm install --global surge
 
 3. 在项目中， `deploy.sh` 使用以下内容创建并运行它以进行部署：
 
-    ```bash{13,20,23}
+    ``` bash{13,20,23}
     #!/usr/bin/env sh
 
     # 当发生错误时中止脚本

@@ -1,19 +1,9 @@
-version: 2.1
+version: 2
 
 defaults: &defaults
   working_directory: ~/project/vue
   docker:
-    - image: circleci/node:lts-browsers
-
-aliases:
-  - &restore-yarn-cache
-    key: v2-vue-cli-{{ checksum "yarn.lock" }}
-
-  - &save-yarn-cache
-    key: v2-vue-cli-{{ checksum "yarn.lock" }}
-    paths:
-      - node_modules/
-      - ~/.cache
+    - image: vuejs/ci
 
 workflow_filters: &filters
   filters:
@@ -26,46 +16,54 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - restore_cache: *restore-yarn-cache
+      - restore_cache:
+          keys:
+            - v2-vue-cli-{{ checksum "yarn.lock" }}
       - run: yarn --network-timeout 600000
-      - save_cache: *save-yarn-cache
+      - save_cache:
+          key: v2-vue-cli-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules/
+            - ~/.cache
       - persist_to_workspace:
           root: ~/
           paths:
             - project/vue
             - .cache/Cypress
 
-  e2e:
-    <<: *defaults
-    steps:
-      - attach_workspace:
-          at: ~/
-      - run: ./scripts/e2e-test/run-e2e-test.sh
-
-  core:
+  group-1:
     <<: *defaults
     steps:
       - attach_workspace:
           at: ~/
       - run: yarn test -p cli,cli-service,cli-shared-utils
 
-  typescript:
+  group-2:
     <<: *defaults
     steps:
       - attach_workspace:
           at: ~/
       - run: yarn test 'ts(?:\w(?!E2e))+\.spec\.js$'
 
-  plugins:
+  group-3:
     <<: *defaults
     steps:
       - attach_workspace:
           at: ~/
       - run: yarn lint-without-fix
       - run: yarn check-links
-      - run: yarn test -p eslint,pwa,babel,babel-preset-app,vuex,router
+      - restore_cache:
+          keys:
+            # TODO: should use a more accurate cache key
+            - v2-vue-cli-offline-{{ checksum "yarn.lock" }}
+      - run: yarn config set yarn-offline-mirror ~/npm-packages-offline-cache
+      - run: yarn test -p cli-service-global,eslint,pwa,babel,babel-preset-app,vuex,router
+      - save_cache:
+          key: v2-vue-cli-offline-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/npm-packages-offline-cache
 
-  tests:
+  group-4:
     <<: *defaults
     steps:
       - attach_workspace:
@@ -84,8 +82,6 @@ jobs:
           path: packages/@vue/cli-ui/tests/e2e/videos
       - store_artifacts:
           path: packages/@vue/cli-ui/tests/e2e/screenshots
-      - store_artifacts:
-          path: /home/circleci/.npm/_logs
 
 workflows:
   version: 2
@@ -93,27 +89,23 @@ workflows:
     jobs:
       - install:
           <<: *filters
-      - core:
+      - group-1:
           <<: *filters
           requires:
             - install
-      - typescript:
+      - group-2:
           <<: *filters
           requires:
             - install
-      - plugins:
+      - group-3:
           <<: *filters
           requires:
             - install
-      - tests:
+      - group-4:
           <<: *filters
           requires:
             - install
       - cli-ui:
-          <<: *filters
-          requires:
-            - install
-      - e2e:
           <<: *filters
           requires:
             - install

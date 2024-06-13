@@ -7,8 +7,8 @@ class App {
   /**
    * methods
    */
-  async open (path = '/') {
-    await browser.url(path)
+  open (path = '/') {
+    browser.url(path)
   }
 }
 

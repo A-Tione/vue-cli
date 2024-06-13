@@ -3,20 +3,19 @@ jest.mock('vue-cli-plugin-foo', () => () => {}, { virtual: true })
 
 const fs = require('fs')
 const path = require('path')
-const { semver } = require('@vue/cli-shared-utils')
 const Service = require('../lib/Service')
 
 const mockPkg = json => {
   fs.writeFileSync('/package.json', JSON.stringify(json, null, 2))
 }
 
-const createMockService = async (plugins = [], init = true, mode) => {
+const createMockService = (plugins = [], init = true, mode) => {
   const service = new Service('/', {
     plugins,
     useBuiltIn: false
   })
   if (init) {
-    await service.init(mode)
+    service.init(mode)
   }
   return service
 }
@@ -36,11 +35,11 @@ afterEach(() => {
   }
 })
 
-test('env loading', async () => {
+test('env loading', () => {
   process.env.FOO = 0
   fs.writeFileSync('/.env.local', `FOO=1\nBAR=2`)
   fs.writeFileSync('/.env', `BAR=3\nBAZ=4`)
-  await createMockService()
+  createMockService()
 
   expect(process.env.FOO).toBe('0')
   expect(process.env.BAR).toBe('2')
@@ -50,11 +49,11 @@ test('env loading', async () => {
   fs.unlinkSync('/.env')
 })
 
-test('env loading for custom mode', async () => {
+test('env loading for custom mode', () => {
   process.env.VUE_CLI_TEST_TESTING_ENV = true
   fs.writeFileSync('/.env', 'FOO=1')
   fs.writeFileSync('/.env.staging', 'FOO=2\nNODE_ENV=production')
-  await createMockService([], true, 'staging')
+  createMockService([], true, 'staging')
 
   expect(process.env.FOO).toBe('2')
   expect(process.env.NODE_ENV).toBe('production')
@@ -68,7 +67,7 @@ test('loading plugins from package.json', () => {
   mockPkg({
     devDependencies: {
       bar: '^1.0.0',
-      '@vue/cli-plugin-babel': '^5.0.0',
+      '@vue/cli-plugin-babel': '^4.5.0',
       'vue-cli-plugin-foo': '^1.0.0'
     }
   })
@@ -78,72 +77,72 @@ test('loading plugins from package.json', () => {
   expect(service.plugins.some(({ id }) => id === 'bar')).toBe(false)
 })
 
-test('load project options from package.json', async () => {
+test('load project options from package.json', () => {
   mockPkg({
     vue: {
       lintOnSave: 'default'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   expect(service.projectOptions.lintOnSave).toBe('default')
 })
 
-test('handle option publicPath and outputDir correctly', async () => {
+test('handle option publicPath and outputDir correctly', () => {
   mockPkg({
     vue: {
       publicPath: 'https://foo.com/bar',
       outputDir: '/public/'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   expect(service.projectOptions.publicPath).toBe('https://foo.com/bar/')
   expect(service.projectOptions.outputDir).toBe('/public')
 })
 
-test('normalize publicPath when relative', async () => {
+test('normalize publicPath when relative', () => {
   mockPkg({
     vue: {
       publicPath: './foo/bar'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   expect(service.projectOptions.publicPath).toBe('foo/bar/')
 })
 
-test('allow custom protocol in publicPath', async () => {
+test('allow custom protocol in publicPath', () => {
   mockPkg({
     vue: {
       publicPath: 'customprotocol://foo/bar'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   expect(service.projectOptions.publicPath).toBe('customprotocol://foo/bar/')
 })
 
-test('keep publicPath when empty', async () => {
+test('keep publicPath when empty', () => {
   mockPkg({
     vue: {
       publicPath: ''
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   expect(service.projectOptions.publicPath).toBe('')
 })
 
-test('load project options from vue.config.js', async () => {
-  fs.writeFileSync(path.resolve('/', 'vue.config.js'), '') // only to ensure fs.existsSync returns true
+test('load project options from vue.config.js', () => {
+  fs.writeFileSync(path.resolve('/', 'vue.config.js'), '')  // only to ensure fs.existsSync returns true
   jest.mock(path.resolve('/', 'vue.config.js'), () => ({ lintOnSave: false }), { virtual: true })
   mockPkg({
     vue: {
       lintOnSave: 'default'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   // vue.config.js has higher priority
   expect(service.projectOptions.lintOnSave).toBe(false)
 })
 
-test('load project options from vue.config.js as a function', async () => {
+test('load project options from vue.config.js as a function', () => {
   fs.writeFileSync(path.resolve('/', 'vue.config.js'), '')
   jest.mock(path.resolve('/', 'vue.config.js'), () => function () { return { lintOnSave: false } }, { virtual: true })
   mockPkg({
@@ -151,30 +150,29 @@ test('load project options from vue.config.js as a function', async () => {
       lintOnSave: 'default'
     }
   })
-  const service = await createMockService()
+  const service = createMockService()
   // vue.config.js has higher priority
   expect(service.projectOptions.lintOnSave).toBe(false)
 })
 
-test('api: assertVersion', async () => {
+test('api: assertVersion', () => {
   const plugin = {
     id: 'test-assertVersion',
     apply: api => {
-      const majorVersionNumber = semver.major(api.version)
-      expect(() => api.assertVersion(majorVersionNumber)).not.toThrow()
-      expect(() => api.assertVersion(`^${majorVersionNumber}.0.0-0`)).not.toThrow()
+      expect(() => api.assertVersion(4)).not.toThrow()
+      expect(() => api.assertVersion('^4.0.0-0')).not.toThrow()
       // expect(() => api.assertVersion('>= 4')).not.toThrow()
 
       expect(() => api.assertVersion(4.1)).toThrow('Expected string or integer value')
       expect(() => api.assertVersion('^100')).toThrow('Require @vue/cli-service "^100"')
     }
   }
-  await createMockService([plugin], true /* init */)
+  createMockService([plugin], true /* init */)
 })
 
-test('api: registerCommand', async () => {
+test('api: registerCommand', () => {
   let args
-  const service = await createMockService([{
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.registerCommand('foo', _args => {
@@ -183,13 +181,13 @@ test('api: registerCommand', async () => {
     }
   }])
 
-  await service.run('foo', { n: 1 })
+  service.run('foo', { n: 1 })
   expect(args).toEqual({ _: [], n: 1 })
 })
 
-test('api: --skip-plugins', async () => {
+test('api: --skip-plugins', () => {
   let untouched = true
-  const service = await createMockService([{
+  const service = createMockService([{
     id: 'test-command',
     apply: api => {
       api.registerCommand('foo', _args => {
@@ -204,67 +202,11 @@ test('api: --skip-plugins', async () => {
     }
   }], false)
 
-  await service.run('foo', { 'skip-plugins': 'test-plugin' })
+  service.run('foo', { 'skip-plugins': 'test-plugin' })
   expect(untouched).toEqual(true)
 })
 
-describe('internal: gather pluginsToSkip and cleanup args', () => {
-  let resultingArgs, resultingRawArgv
-
-  const testCommand = {
-    id: 'test-command',
-    apply: api => {
-      api.registerCommand('foo', (_args, _rawArgv) => {
-        resultingArgs = _args
-        resultingRawArgv = _rawArgv
-      })
-    }
-  }
-  const plugin1 = {
-    id: 'vue-cli-plugin-test-plugin1',
-    apply: api => {
-    }
-  }
-
-  test('Single --skip-plugins', async () => {
-    const service = await createMockService([
-      testCommand,
-      plugin1
-    ], false)
-    const args = { 'skip-plugins': 'test-plugin1' }
-    const rawArgv = ['foo', '--skip-plugins', 'test-plugin1']
-    await service.run('foo', args, rawArgv)
-    expect(resultingArgs).toEqual({ '_': [] })
-    expect(resultingRawArgv).toEqual([])
-    expect(...service.pluginsToSkip).toEqual('vue-cli-plugin-test-plugin1')
-  })
-
-  resultingArgs = resultingRawArgv = undefined
-  test('Multiple --skip-plugins', async () => {
-    const service = await createMockService([
-      testCommand,
-      plugin1,
-      {
-        id: 'vue-cli-plugin-test-plugin2',
-        apply: api => {
-        }
-      },
-      {
-        id: 'vue-cli-plugin-test-plugin3',
-        apply: api => {
-        }
-      }
-    ], false)
-    const args = { 'skip-plugins': ['test-plugin1,test-plugin2', 'test-plugin3'] }
-    const rawArgv = ['foo', '--skip-plugins', 'test-plugin1,test-plugin2', '--skip-plugins', 'test-plugin3']
-    await service.run('foo', args, rawArgv)
-    expect(resultingArgs).toEqual({ '_': [] })
-    expect(resultingRawArgv).toEqual([])
-    expect([...service.pluginsToSkip].sort()).toEqual(['vue-cli-plugin-test-plugin1', 'vue-cli-plugin-test-plugin2', 'vue-cli-plugin-test-plugin3'])
-  })
-})
-
-test('api: defaultModes', async () => {
+test('api: defaultModes', () => {
   fs.writeFileSync('/.env.foo', `FOO=5\nBAR=6`)
   fs.writeFileSync('/.env.foo.local', `FOO=7\nBAZ=8`)
 
@@ -285,7 +227,7 @@ test('api: defaultModes', async () => {
     foo: 'foo'
   }
 
-  await (await createMockService([plugin1], false /* init */)).run('foo')
+  createMockService([plugin1], false /* init */).run('foo')
 
   delete process.env.NODE_ENV
   delete process.env.BABEL_ENV
@@ -302,11 +244,11 @@ test('api: defaultModes', async () => {
     test: 'test'
   }
 
-  await (await createMockService([plugin2], false /* init */)).run('test')
+  createMockService([plugin2], false /* init */).run('test')
 })
 
-test('api: chainWebpack', async () => {
-  const service = await createMockService([{
+test('api: chainWebpack', () => {
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.chainWebpack(config => {
@@ -319,8 +261,8 @@ test('api: chainWebpack', async () => {
   expect(config.output.path).toBe('test-dist')
 })
 
-test('api: configureWebpack', async () => {
-  const service = await createMockService([{
+test('api: configureWebpack', () => {
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.configureWebpack(config => {
@@ -335,8 +277,8 @@ test('api: configureWebpack', async () => {
   expect(config.output.path).toBe('test-dist-2')
 })
 
-test('api: configureWebpack returning object', async () => {
-  const service = await createMockService([{
+test('api: configureWebpack returning object', () => {
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.configureWebpack(config => {
@@ -353,8 +295,8 @@ test('api: configureWebpack returning object', async () => {
   expect(config.output.path).toBe('test-dist-3')
 })
 
-test('api: configureWebpack preserve ruleNames', async () => {
-  const service = await createMockService([
+test('api: configureWebpack preserve ruleNames', () => {
+  const service = createMockService([
     {
       id: 'babel',
       apply: require('@vue/cli-plugin-babel')
@@ -375,10 +317,10 @@ test('api: configureWebpack preserve ruleNames', async () => {
   expect(config.module.rules[0].__ruleNames).toEqual(['js'])
 })
 
-test('internal: should correctly set VUE_CLI_ENTRY_FILES', async () => {
+test('internal: should correctly set VUE_CLI_ENTRY_FILES', () => {
   delete process.env.VUE_CLI_ENTRY_FILES
 
-  const service = await createMockService([{
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.configureWebpack(config => {
@@ -399,9 +341,9 @@ test('internal: should correctly set VUE_CLI_ENTRY_FILES', async () => {
   )
 })
 
-test('api: configureDevServer', async () => {
+test('api: configureDevServer', () => {
   const cb = () => {}
-  const service = await createMockService([{
+  const service = createMockService([{
     id: 'test',
     apply: api => {
       api.configureDevServer(cb)
@@ -410,8 +352,8 @@ test('api: configureDevServer', async () => {
   expect(service.devServerConfigFns).toContain(cb)
 })
 
-test('api: resolve', async () => {
-  await createMockService([{
+test('api: resolve', () => {
+  createMockService([{
     id: 'test',
     apply: api => {
       expect(api.resolve('foo.js')).toBe(path.resolve('/', 'foo.js'))
@@ -419,8 +361,8 @@ test('api: resolve', async () => {
   }])
 })
 
-test('api: hasPlugin', async () => {
-  await createMockService([
+test('api: hasPlugin', () => {
+  createMockService([
     {
       id: 'vue-cli-plugin-foo',
       apply: api => {
@@ -435,52 +377,5 @@ test('api: hasPlugin', async () => {
         expect(api.hasPlugin('vue-cli-plugin-foo')).toBe(true)
       }
     }
-  ])
-})
-
-test('order: service plugins order', async () => {
-  const applyCallOrder = []
-  function apply (id, order) {
-    order = order || {}
-    const fn = jest.fn(() => { applyCallOrder.push(id) })
-    fn.after = order.after
-    return fn
-  }
-  const service = new Service('/', {
-    plugins: [
-      {
-        id: 'vue-cli-plugin-foo',
-        apply: apply('vue-cli-plugin-foo')
-      },
-      {
-        id: 'vue-cli-plugin-bar',
-        apply: apply('vue-cli-plugin-bar', { after: 'vue-cli-plugin-baz' })
-      },
-      {
-        id: 'vue-cli-plugin-baz',
-        apply: apply('vue-cli-plugin-baz')
-      }
-    ]
-  })
-  expect(service.plugins.map(p => p.id)).toEqual([
-    'built-in:commands/serve',
-    'built-in:commands/build',
-    'built-in:commands/inspect',
-    'built-in:commands/help',
-    'built-in:config/base',
-    'built-in:config/assets',
-    'built-in:config/css',
-    'built-in:config/prod',
-    'built-in:config/app',
-    'vue-cli-plugin-foo',
-    'vue-cli-plugin-baz',
-    'vue-cli-plugin-bar'
-  ])
-
-  await service.init()
-  expect(applyCallOrder).toEqual([
-    'vue-cli-plugin-foo',
-    'vue-cli-plugin-baz',
-    'vue-cli-plugin-bar'
   ])
 })

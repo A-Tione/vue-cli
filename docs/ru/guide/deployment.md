@@ -39,13 +39,11 @@ serve -s dist
 
 1. Установите корректное значение `publicPath` в `vue.config.js`.
 
-    Если публикуете по адресу `https://<USERNAME>.github.io/` или на пользовательский домен, то можно опустить `publicPath`, так как оно по умолчанию `"/"`.
+    Если вы публикуете по адресу `https://<USERNAME>.github.io/`, вы можете опустить `publicPath`, так как оно по умолчанию `"/"`.
 
     Если вы публикуете по адресу `https://<USERNAME>.github.io/<REPO>/`, (т.е. ваш репозиторий находится по адресу `https://github.com/<USERNAME>/<REPO>`), установите `publicPath` в значение `"/<REPO>/"`. Например, если ваш репозиторий называется "my-project", то ваш `vue.config.js` будет выглядеть примерно так:
 
     ```js
-    // файл vue.config.js должен быть расположен в корневом каталоге проекта
-
     module.exports = {
       publicPath: process.env.NODE_ENV === 'production'
         ? '/my-project/'
@@ -163,58 +161,24 @@ module.exports = {
 
 Также посмотрите [vue-cli-plugin-netlify-lambda](https://github.com/netlify/vue-cli-plugin-netlify-lambda).
 
-#### Использование режима history во Vue Router
-
-Для получения прямых хитов при использовании `режима history` во Vue Router, необходимо перенаправлять весь трафик в файл `/index.html`.
-
-> Подробнее можно изучить в [документации Netlify по перенаправлениям](https://docs.netlify.com/routing/redirects/rewrites-proxies/#history-pushstate-and-single-page-apps).
-
-##### Рекомендуемый метод
-
-Создать файл `netlify.toml` в корневом каталоге репозитория со следующим содержимым:
-
-```toml
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-##### Альтернативный метод
-
-Создать файл `_redirects` в каталоге `/public` со следующим содержимым:
+Для получения прямых хитов при использовании `режима history` во Vue Router, необходимо создавать файл `_redirects` в каталоге `/public` со следующим содержимым:
 
 ```
 # Настройки Netlify для одностраничных приложений (SPA)
 /*    /index.html   200
 ```
 
-При использовании [@vue/cli-plugin-pwa](../core-plugins/pwa.md#vue-cli-plugin-pwa) убедитесь, что файл `_redirects` не кэшируется service worker.
-
-Для этого добавьте в `vue.config.js` следующее:
-
-```js
-// файл vue.config.js должен быть расположен в корневом каталоге проекта
-
-module.exports = {
-  pwa: {
-      workboxOptions: {
-        exclude: [/_redirects/]
-      }
-    }
-}
-```
-
-Подробнее об опциях [workboxOptions](../core-plugins/pwa.md#configuration) и [exclude](https://developers.google.com/web/tools/workbox/reference-docs/latest/module-workbox-webpack-plugin.InjectManifest#InjectManifest).
+Подробнее можно изучить в [документации Netlify по перенаправлениям](https://www.netlify.com/docs/redirects/#history-pushstate-and-single-page-apps).
 
 ### Render
 
 [Render](https://render.com) предлагает [бесплатный хостинг статических сайтов](https://render.com/docs/static-sites) с полностью управляемым SSL, глобальным CDN и непрерывным автоматическим развёртыванием из GitHub.
 
-1. Создайте новый Static Site в Render, и предоставьте доступ для GitHub-приложения Render в репозиторий.
+1. Создайте новый Web Service в Render, и предоставьте доступ для GitHub-приложения Render в репозиторий.
 
 2. При создании используйте следующие значения:
 
+  - **Окружение:** `Static Site`
   - **Команда сборки:** `npm run build` или `yarn build`
   - **Каталог публикации:** `dist`
 
@@ -295,40 +259,79 @@ firebase deploy --only hosting
 
 Обратитесь к [документации Firebase](https://firebase.google.com/docs/hosting/deploying) для получения более подробной информации.
 
-### Vercel
+### Now
 
-[Vercel](https://vercel.com/home) — облачная платформа, позволяющая разработчикам хостить Jamstack веб-сайты и веб-сервисы, которые публикуются мгновенно, автоматически масштабируются и не требуют никакого контроля, всё это с zero-конфигурацией. Они обеспечивают глобальный доступ, SSL-шифрование, сжатие ресурсов, инвалидацию кэша и многое другое.
+В данном примере используется последняя версия платформы Now версии 2.
 
-#### Шаг 1: Публикация проекта Vue на Vercel
+1. Установите Now CLI:
 
-Для публикации проекта Vue с помощью [Vercel для интеграции с Git](https://vercel.com/docs/git-integrations), убедитесь, что он был выложен в Git-репозиторий.
+```bash
+npm install -g now
 
-Импортируйте проект в Vercel с помощью [Import Flow](https://vercel.com/import/git). Во время импорта будут запрошены все соответствующие [опции](https://vercel.com/docs/build-step#build-&-development-settings), предварительно сконфигурированные, но с возможностью изменения при необходимости.
+# Или если предпочитаете локальную установку
+npm install now
+```
 
-После импорта проекта, все последующие push в ветку будут генерировать [публикации для предпросмотра](https://vercel.com/docs/platform/deployments#preview), а все изменения внесённые в [ветку Production](https://vercel.com/docs/git-integrations#production-branch) (обычно "master" или "main") будут приводить к [публикации Production](https://vercel.com/docs/platform/deployments#production).
+2. Добавьте файл `now.json` в корневой каталог проекта:
 
-После публикации вы получите URL-адрес для просмотра приложения вживую, например: https://vue-example-tawny.vercel.app/.
+    ```json
+    {
+      "name": "my-example-app",
+      "version": 2,
+      "builds": [
+        {
+          "src": "package.json",
+          "use": "@now/static-build"
+        }
+      ],
+      "routes": [
+        {
+          "src": "/(js|css|img)/.*",
+          "headers": { "cache-control": "max-age=31536000, immutable" }
+        },
+        { "handle": "filesystem" },
+        { "src": ".*", "dest": "/" }
+      ],
+      "alias": "example.com"
+    }
+    ```
 
-#### Шаг 2 (опционально): Использование пользовательского домена
+    Если у вас есть другие/дополнительные каталоги, измените маршрут соответствующим образом:
 
-При необходимости использовать пользовательский домен при публикации Vercel, можно **Добавить** или **Перенаправить** домен через [настройки домена аккаунта](https://vercel.com/dashboard/domains) Vercel.
+    ```diff
+    - {
+    -   "src": "/(js|css|img)/.*",
+    -   "headers": { "cache-control": "max-age=31536000, immutable" }
+    - }
+    + {
+    +   "src": "/(js|css|img|fonts|media)/.*",
+    +   "headers": { "cache-control": "max-age=31536000, immutable" }
+    + }
+    ```
 
-Для добавления домена в проект, перейдите в раздел [Проект](https://vercel.com/docs/platform/projects) на панели Vercel. После выбора проекта перейдите на вкладку "Настройки", затем выберите пункт меню **Домены**. На странице **Домен** вашего проекта, укажите домен которые хотите использовать в проекте.
+    Когда значение `outputDir` вместо стандартного `dist` указано `build`:
 
-После добавления домена, будут предоставлены различные методы его настройки.
+    ```diff
+    - {
+    -   "src": "package.json",
+    -   "use": "@now/static-build"
+    - }
+    + {
+    +   "src": "package.json",
+    +   "use": "@now/static-build",
+    +   "config": { "distDir": "build" }
+    + }
+    ```
 
-#### Публикация свежего проекта на Vue
+3. Добавьте `now-build` скрипт для публикации в `package.json`:
 
-Для публикации свежего проекта на Vue с настроенным Git-репозиторием, можно с помощью кнопки Deploy ниже:
+    ```json
+    "now-build": "npm run build"
+    ```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/import/git?s=https%3A%2F%2Fgithub.com%2Fvercel%2Fvercel%2Ftree%2Fmaster%2Fexamples%2Fvue)
+    Для публикации запустите `now`.
 
-## Ресурсы:
-
-- [Пример исходного кода](https://github.com/vercel/vercel/tree/master/examples/vue)
-- [Официальное руководство Vercel](https://vercel.com/guides/deploying-vuejs-to-vercel)
-- [Руководство по публикации Vercel](https://vercel.com/docs)
-- [Документация по пользовательским доменам Vercel](https://vercel.com/docs/custom-domains)
+    Если необходим псевдоним публикации, запустите `now --target production`.
 
 ### Stdlib
 

@@ -1,4 +1,4 @@
-module.exports = (api, options, rootOptions) => {
+module.exports = api => {
   api.extendPackage(
     {
       devDependencies: {
@@ -7,9 +7,4 @@ module.exports = (api, options, rootOptions) => {
     },
     { warnIncompatibleVersions: false }
   )
-
-  // update vue 3 typescript shim
-  if (rootOptions.vueVersion === 3) {
-    api.transformScript('src/shims-vue.d.ts', require('../codemods/migrateComponentType'))
-  }
 }

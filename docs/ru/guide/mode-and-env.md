@@ -43,24 +43,12 @@ vue-cli-service build --mode development
 
 ```
 FOO=bar
-VUE_APP_NOT_SECRET_CODE=some_value
+VUE_APP_SECRET=secret
 ```
 
-::: warning ВНИМАНИЕ
-Не храните никаких секретов (например, приватных ключей API) в приложении!
+Обратите внимание, что только переменные с префиксом `VUE_APP_` будут статически внедряться в клиентскую сборку с помощью `webpack.DefinePlugin`.
 
-Так как переменные окружения внедряются в сборку, то любой желающий сможет увидеть их, изучив файлы сборки приложения.
-:::
-
-Обратите внимание, что только `NODE_ENV`, `BASE_URL` и переменные, именованные с префикса `VUE_APP_`, статически внедрятся в *клиентскую сборку* с помощью `webpack.DefinePlugin`. Это сделано во избежание случайного обнародования закрытого ключа на машине, которая может иметь такое же имя.
-
-Подробнее о правилах парсинга env [в документации `dotenv`](https://github.com/motdotla/dotenv#rules). Можно также использовать [dotenv-expand](https://github.com/motdotla/dotenv-expand) для переменных расширения (доступно с версии Vue CLI 3.5+). Например:
-
-```bash
-FOO=foo
-BAR=bar
-CONCAT=$FOO$BAR # CONCAT=foobar
-```
+Подробнее о правилах парсинга env можно узнать [в документации `dotenv`](https://github.com/motdotla/dotenv#rules). Мы также используем [dotenv-expand](https://github.com/motdotla/dotenv-expand) для переменных расширения (доступно в Vue CLI 3.5+).
 
 Загруженные переменные станут доступны всем командам `vue-cli-service`, плагинам и зависимостям.
 
@@ -84,7 +72,7 @@ VUE_APP_TITLE=My App
 
 ```
 NODE_ENV=production
-VUE_APP_TITLE=My Staging App
+VUE_APP_TITLE=My App (staging)
 ```
 
 - `vue-cli-service build` собирает приложение для production, загружает `.env`, `.env.production` и `.env.production.local` если они существуют;
@@ -98,10 +86,10 @@ VUE_APP_TITLE=My Staging App
 Можно получить доступ к переменным окружения из кода приложения:
 
 ```js
-console.log(process.env.VUE_APP_NOT_SECRET_CODE)
+console.log(process.env.VUE_APP_SECRET)
 ```
 
-На этапе сборки `process.env.VUE_APP_NOT_SECRET_CODE` будет заменяться соответствующим значением. Когда в файле указано `VUE_APP_NOT_SECRET_CODE=some_value` — после сборки значением будет `"some_value"`.
+На этапе сборки `process.env.VUE_APP_SECRET` будет заменяться соответствующим значением. Когда в файле указано `VUE_APP_SECRET=secret` — после сборки значением будет `"secret"`.
 
 В дополнение к переменным `VUE_APP_*` есть также две специальные переменные, которые всегда доступны в коде приложения:
 

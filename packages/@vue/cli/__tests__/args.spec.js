@@ -1,14 +1,11 @@
 const path = require('path')
-const { execa } = require('@vue/cli-shared-utils')
+const execa = require('execa')
 
 const CLI_PATH = path.resolve(__dirname, '..', 'bin', 'vue.js')
 
-const runAsync = (args, options) => execa(CLI_PATH, args, options)
+const runAsync = async args => await execa(CLI_PATH, args)
 
 test('suggests matching command', async () => {
-  const { code, stdout } = await runAsync(['confgi'], { reject: false })
-
-  // Assertions
-  expect(code).toBe(1)
+  const { stdout } = await runAsync(['confgi'])
   expect(stdout).toContain('Did you mean config?')
 })

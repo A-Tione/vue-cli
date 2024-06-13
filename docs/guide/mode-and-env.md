@@ -32,7 +32,7 @@ If you have a default `NODE_ENV` in your environment, you should either remove i
 
 You can specify env variables by placing the following files in your project root:
 
-```bash
+``` bash
 .env                # loaded in all cases
 .env.local          # loaded in all cases, ignored by git
 .env.[mode]         # only loaded in specified mode
@@ -54,14 +54,7 @@ Environment variables are embedded into the build, meaning anyone can view them 
 
 Note that only `NODE_ENV`, `BASE_URL`, and variables that start with `VUE_APP_` will be statically embedded into the *client bundle* with `webpack.DefinePlugin`. It is to avoid accidentally exposing a private key on the machine that could have the same name.
 
-For more detailed env parsing rules, please refer to [the documentation of `dotenv`](https://github.com/motdotla/dotenv#rules). We also use [dotenv-expand](https://github.com/motdotla/dotenv-expand) for variable expansion (available in Vue CLI 3.5+). For example:
-
-```bash
-FOO=foo
-BAR=bar
-
-CONCAT=$FOO$BAR # CONCAT=foobar
-```
+For more detailed env parsing rules, please refer to [the documentation of `dotenv`](https://github.com/motdotla/dotenv#rules). We also use [dotenv-expand](https://github.com/motdotla/dotenv-expand) for variable expansion (available in Vue CLI 3.5+).
 
 Loaded variables will become available to all `vue-cli-service` commands, plugins and dependencies.
 
@@ -86,7 +79,7 @@ And the following `.env.staging` file:
 
 ```
 NODE_ENV=production
-VUE_APP_TITLE=My Staging App
+VUE_APP_TITLE=My App (staging)
 ```
 
 - `vue-cli-service build` builds a production app, loading `.env`, `.env.production` and `.env.production.local` if they are present;

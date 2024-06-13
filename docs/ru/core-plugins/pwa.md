@@ -163,7 +163,7 @@ module.exports = {
 
 ## Установка в уже созданный проект
 
-```bash
+```sh
 vue add pwa
 ```
 

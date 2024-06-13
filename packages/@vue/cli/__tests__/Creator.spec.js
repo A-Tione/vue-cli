@@ -9,9 +9,8 @@ test('default', async () => {
     {
       message: 'pick a preset',
       choices: [
-        // both names are `Default`, the vue version is indicated in the feature prompts, so later we'll test the result preset for the vue version
         'Default',
-        'Default',
+        'Default (Vue 3 Preview)',
         'Manually select'
       ],
       choose: 0
@@ -22,7 +21,7 @@ test('default', async () => {
       choose: 0
     }
   ]
-  await assertPromptModule([], expectedPrompts, defaults.presets['Default (Vue 3)'])
+  await assertPromptModule([], expectedPrompts, defaults.presets.default)
 })
 
 test('manual + PromptModuleAPI', async () => {
@@ -108,7 +107,7 @@ test('manual + PromptModuleAPI', async () => {
       choices: [
         'test',
         'Default',
-        'Default',
+        'Default (Vue 3 Preview)',
         'Manually'
       ],
       choose: 0

@@ -14,14 +14,14 @@ test('mocha', async () => {
     },
     {
       message: 'Pick a unit testing solution',
-      choices: ['Jest', 'Mocha'],
+      choices: ['Mocha', 'Jest'],
       choose: 0
     }
   ]
 
   const expectedOptions = {
     plugins: {
-      '@vue/cli-plugin-unit-jest': {}
+      '@vue/cli-plugin-unit-mocha': {}
     }
   }
 
@@ -42,14 +42,14 @@ test('jest', async () => {
     },
     {
       message: 'Pick a unit testing solution',
-      choices: ['Jest', 'Mocha'],
+      choices: ['Mocha', 'Jest'],
       choose: 1
     }
   ]
 
   const expectedOptions = {
     plugins: {
-      '@vue/cli-plugin-unit-mocha': {}
+      '@vue/cli-plugin-unit-jest': {}
     }
   }
 

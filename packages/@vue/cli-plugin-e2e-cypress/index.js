@@ -1,7 +1,5 @@
-const path = require('path')
-
 module.exports = (api, options) => {
-  const { info, chalk, execa, resolveModule } = require('@vue/cli-shared-utils')
+  const { info, chalk, execa } = require('@vue/cli-shared-utils')
 
   api.registerCommand('test:e2e', {
     description: 'run e2e tests with Cypress',
@@ -33,21 +31,11 @@ module.exports = (api, options) => {
       ...rawArgs
     ]
 
-    // Use loadModule to allow users to customize their Cypress dependency version.
-    const cypressPackageJsonPath =
-      resolveModule('cypress/package.json', api.getCwd()) ||
-      resolveModule('cypress/package.json', __dirname)
-    const cypressPkg = require(cypressPackageJsonPath)
-    const cypressBinPath = path.resolve(
-      cypressPackageJsonPath,
-      '../',
-      cypressPkg.bin.cypress
-    )
-
+    const cypressBinPath = require.resolve('cypress/bin/cypress')
     const runner = execa(cypressBinPath, cyArgs, { stdio: 'inherit' })
     if (server) {
-      runner.on('exit', () => server.stop())
-      runner.on('error', () => server.stop())
+      runner.on('exit', () => server.close())
+      runner.on('error', () => server.close())
     }
 
     if (process.env.VUE_CLI_TEST) {

@@ -38,7 +38,6 @@ type ExtendPackageOptions =
       prune?: boolean
       merge?: boolean
       warnIncompatibleVersions?: boolean
-      forceOverwrite?: boolean
     }
   | boolean
 
@@ -49,7 +48,7 @@ type Preset = Partial<{
   useConfigFiles: boolean
   plugins: Record<string, any>
   configs: Record<string, any>
-  cssPreprocessor: 'sass' | 'dart-sass' | 'less' | 'stylus'
+  cssPreprocessor: 'sass' | 'dart-sass' | 'node-sass' | 'less' | 'stylus'
 }>
 
 declare class PromptModuleAPI {
@@ -85,10 +84,10 @@ declare class GeneratorAPI {
    * Check if the project has a given plugin.
    *
    * @param id - Plugin id, can omit the (@vue/|vue-|@scope/vue)-cli-plugin- prefix
-   * @param versionRange - Plugin version range. Defaults to '*'
+   * @param version - Plugin version. Defaults to ''
    * @return `boolean`
    */
-  hasPlugin(id: string, versionRange?: string): boolean
+  hasPlugin(id: string, version?: string): boolean
 
   /**
    * Configure how config files are extracted.
@@ -122,8 +121,6 @@ declare class GeneratorAPI {
    *    that dependency fields are always deep merged regardless of this option.
    * @param [options.warnIncompatibleVersions=true] Output warning
    *    if two dependency version ranges don't intersect.
-   * @param [options.forceOverwrite=false] force using the dependency
-   * version provided in the first argument, instead of trying to get the newer ones
    */
   extendPackage(
     fields: (pkg: Record<string, any>) => object,

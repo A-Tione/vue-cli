@@ -5,8 +5,6 @@ const ini = require('ini')
 const minimist = require('minimist')
 const LRU = require('lru-cache')
 
-const stripAnsi = require('strip-ansi')
-
 const {
   chalk,
   execa,
@@ -85,23 +83,9 @@ function stripVersion (packageName) {
   return result[1]
 }
 
-// extract the package scope from the full package name
-// the result includes the initial @ character
-function extractPackageScope (packageName) {
-  const scopedNameRegExp = /^(@[^/]+)\/.*$/
-  const result = packageName.match(scopedNameRegExp)
-
-  if (!result) {
-    return undefined
-  }
-
-  return result[1]
-}
-
 class PackageManager {
   constructor ({ context, forcePackageManager } = {}) {
     this.context = context || process.cwd()
-    this._registries = {}
 
     if (forcePackageManager) {
       this.bin = forcePackageManager
@@ -118,24 +102,6 @@ class PackageManager {
     // if no package managers specified, and no lockfile exists
     if (!this.bin) {
       this.bin = loadOptions().packageManager || (hasYarn() ? 'yarn' : hasPnpm3OrLater() ? 'pnpm' : 'npm')
-    }
-
-    if (this.bin === 'npm') {
-      // npm doesn't support package aliases until v6.9
-      const MIN_SUPPORTED_NPM_VERSION = '6.9.0'
-      const npmVersion = stripAnsi(execa.sync('npm', ['--version']).stdout)
-
-      if (semver.lt(npmVersion, MIN_SUPPORTED_NPM_VERSION)) {
-        throw new Error(
-          'You are using an outdated version of NPM.\n' +
-          'It does not support some core functionalities of Vue CLI.\n' +
-          'Please upgrade your NPM version.'
-        )
-      }
-
-      if (semver.gte(npmVersion, '7.0.0')) {
-        this.needsPeerDepsFix = true
-      }
     }
 
     if (!SUPPORTED_PACKAGE_MANAGERS.includes(this.bin)) {
@@ -162,10 +128,9 @@ class PackageManager {
 
   // Any command that implemented registry-related feature should support
   // `-r` / `--registry` option
-  async getRegistry (scope) {
-    const cacheKey = scope || ''
-    if (this._registries[cacheKey]) {
-      return this._registries[cacheKey]
+  async getRegistry () {
+    if (this._registry) {
+      return this._registry
     }
 
     const args = minimist(process.argv, {
@@ -174,30 +139,23 @@ class PackageManager {
       }
     })
 
-    let registry
     if (args.registry) {
-      registry = args.registry
+      this._registry = args.registry
     } else if (!process.env.VUE_CLI_TEST && await shouldUseTaobao(this.bin)) {
-      registry = registries.taobao
+      this._registry = registries.taobao
     } else {
       try {
-        if (scope) {
-          registry = (await execa(this.bin, ['config', 'get', scope + ':registry'])).stdout
-        }
-        if (!registry || registry === 'undefined') {
-          registry = (await execa(this.bin, ['config', 'get', 'registry'])).stdout
-        }
+        this._registry = (await execa(this.bin, ['config', 'get', 'registry'])).stdout
       } catch (e) {
         // Yarn 2 uses `npmRegistryServer` instead of `registry`
-        registry = (await execa(this.bin, ['config', 'get', 'npmRegistryServer'])).stdout
+        this._registry = (await execa(this.bin, ['config', 'get', 'npmRegistryServer'])).stdout
       }
     }
 
-    this._registries[cacheKey] = stripAnsi(registry).trim()
-    return this._registries[cacheKey]
+    return this._registry
   }
 
-  async getAuthConfig (scope) {
+  async getAuthToken () {
     // get npmrc (https://docs.npmjs.com/configuring-npm/npmrc.html#files)
     const possibleRcPaths = [
       path.resolve(this.context, '.npmrc'),
@@ -220,23 +178,13 @@ class PackageManager {
       }
     }
 
-    const registry = await this.getRegistry(scope)
+    const registry = await this.getRegistry()
     const registryWithoutProtocol = registry
-      .replace(/https?:/, '') // remove leading protocol
-      .replace(/([^/])$/, '$1/') // ensure ending with slash
+      .replace(/https?:/, '')     // remove leading protocol
+      .replace(/([^/])$/, '$1/')  // ensure ending with slash
     const authTokenKey = `${registryWithoutProtocol}:_authToken`
-    const authUsernameKey = `${registryWithoutProtocol}:username`
-    const authPasswordKey = `${registryWithoutProtocol}:_password`
 
-    const auth = {}
-    if (authTokenKey in npmConfig) {
-      auth.token = npmConfig[authTokenKey]
-    }
-    if (authPasswordKey in npmConfig) {
-      auth.username = npmConfig[authUsernameKey]
-      auth.password = Buffer.from(npmConfig[authPasswordKey], 'base64').toString()
-    }
-    return auth
+    return npmConfig[authTokenKey]
   }
 
   async setRegistryEnvs () {
@@ -257,10 +205,9 @@ class PackageManager {
     }
 
     try {
-      // chromedriver, etc.
-      const binaryMirrorConfigMetadata = await this.getMetadata('binary-mirror-config', { full: true })
-      const latest = binaryMirrorConfigMetadata['dist-tags'] && binaryMirrorConfigMetadata['dist-tags'].latest
-      const mirrors = binaryMirrorConfigMetadata.versions[latest].mirrors.china
+      // node-sass, chromedriver, etc.
+      const binaryMirrorConfig = await this.getMetadata('binary-mirror-config')
+      const mirrors = binaryMirrorConfig.mirrors.china
       for (const key in mirrors.ENVS) {
         process.env[key] = mirrors.ENVS[key]
       }
@@ -277,12 +224,10 @@ class PackageManager {
       // Do not override user-defined env variable
       // Because we may construct a wrong download url and an escape hatch is necessary
       if (targetPlatform && !process.env.CYPRESS_INSTALL_BINARY) {
-        const projectPkg = resolvePkg(this.context)
-        if (projectPkg && projectPkg.devDependencies && projectPkg.devDependencies.cypress) {
-          const wantedCypressVersion = await this.getRemoteVersion('cypress', projectPkg.devDependencies.cypress)
-          process.env.CYPRESS_INSTALL_BINARY =
-            `${cypressMirror.host}/${wantedCypressVersion}/${targetPlatform}/cypress.zip`
-        }
+        // We only support cypress 3 for the current major version
+        const latestCypressVersion = await this.getRemoteVersion('cypress', '^3')
+        process.env.CYPRESS_INSTALL_BINARY =
+          `${cypressMirror.host}/${latestCypressVersion}/${targetPlatform}/cypress.zip`
       }
     } catch (e) {
       // get binary mirror config failed
@@ -291,8 +236,8 @@ class PackageManager {
 
   // https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
   async getMetadata (packageName, { full = false } = {}) {
-    const scope = extractPackageScope(packageName)
-    const registry = await this.getRegistry(scope)
+    const registry = await this.getRegistry()
+    const authToken = await this.getAuthToken()
 
     const metadataKey = `${this.bin}-${registry}-${packageName}`
     let metadata = metadataCache.get(metadataKey)
@@ -306,18 +251,13 @@ class PackageManager {
       headers.Accept = 'application/vnd.npm.install-v1+json;q=1.0, application/json;q=0.9, */*;q=0.8'
     }
 
-    const authConfig = await this.getAuthConfig(scope)
-    if ('password' in authConfig) {
-      const credentials = Buffer.from(`${authConfig.username}:${authConfig.password}`).toString('base64')
-      headers.Authorization = `Basic ${credentials}`
-    }
-    if ('token' in authConfig) {
-      headers.Authorization = `Bearer ${authConfig.token}`
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`
     }
 
     const url = `${registry.replace(/\/$/g, '')}/${packageName}`
     try {
-      metadata = (await request.get(url, { headers }))
+      metadata = (await request.get(url, { headers })).body
       if (metadata.error) {
         throw new Error(metadata.error)
       }
@@ -347,14 +287,8 @@ class PackageManager {
   }
 
   async runCommand (command, args) {
-    const prevNodeEnv = process.env.NODE_ENV
-    // In the use case of Vue CLI, when installing dependencies,
-    // the `NODE_ENV` environment variable does no good;
-    // it only confuses users by skipping dev deps (when set to `production`).
-    delete process.env.NODE_ENV
-
     await this.setRegistryEnvs()
-    await executeCommand(
+    return await executeCommand(
       this.bin,
       [
         ...PACKAGE_MANAGER_CONFIG[this.bin][command],
@@ -362,24 +296,21 @@ class PackageManager {
       ],
       this.context
     )
-
-    if (prevNodeEnv) {
-      process.env.NODE_ENV = prevNodeEnv
-    }
   }
 
   async install () {
-    const args = []
-
-    if (this.needsPeerDepsFix) {
-      args.push('--legacy-peer-deps')
-    }
-
     if (process.env.VUE_CLI_TEST) {
-      args.push('--silent', '--no-progress')
+      try {
+        process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = true
+        await this.runCommand('install', ['--offline', '--silent', '--no-progress'])
+        delete process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+      } catch (e) {
+        delete process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        await this.runCommand('install', ['--silent', '--no-progress'])
+      }
     }
 
-    return await this.runCommand('install', args)
+    return await this.runCommand('install')
   }
 
   async add (packageName, {
@@ -393,10 +324,6 @@ class PackageManager {
       } else {
         process.env.npm_config_save_prefix = '~'
       }
-    }
-
-    if (this.needsPeerDepsFix) {
-      args.push('--legacy-peer-deps')
     }
 
     return await this.runCommand('add', [packageName, ...args])

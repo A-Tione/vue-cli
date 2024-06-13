@@ -17,7 +17,7 @@ module.exports = cli => {
     message: 'Pick an E2E testing solution:',
     choices: [
       {
-        name: 'Cypress (Test in Chrome, Firefox, MS Edge, and Electron)',
+        name: 'Cypress (Chrome only)',
         value: 'cypress',
         short: 'Cypress'
       },

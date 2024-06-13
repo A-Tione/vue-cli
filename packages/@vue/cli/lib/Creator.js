@@ -77,7 +77,7 @@ module.exports = class Creator extends EventEmitter {
         preset = await this.resolvePreset(cliOptions.preset, cliOptions.clone)
       } else if (cliOptions.default) {
         // vue create foo --default
-        preset = defaults.presets['Default (Vue 3)']
+        preset = defaults.presets.default
       } else if (cliOptions.inlinePreset) {
         // vue create foo --inlinePreset {...}
         try {
@@ -111,6 +111,16 @@ module.exports = class Creator extends EventEmitter {
       }
     }
 
+    // Introducing this hack because typescript plugin must be invoked after router.
+    // Currently we rely on the `plugins` object enumeration order,
+    // which depends on the order of the field initialization.
+    // FIXME: Remove this ugly hack after the plugin ordering API settled down
+    if (preset.plugins['@vue/cli-plugin-router'] && preset.plugins['@vue/cli-plugin-typescript']) {
+      const tmp = preset.plugins['@vue/cli-plugin-typescript']
+      delete preset.plugins['@vue/cli-plugin-typescript']
+      preset.plugins['@vue/cli-plugin-typescript'] = tmp
+    }
+
     // legacy support for vuex
     if (preset.vuex) {
       preset.plugins['@vue/cli-plugin-vuex'] = {}
@@ -122,10 +132,9 @@ module.exports = class Creator extends EventEmitter {
       (hasYarn() ? 'yarn' : null) ||
       (hasPnpm3OrLater() ? 'pnpm' : 'npm')
     )
-
-    await clearConsole()
     const pm = new PackageManager({ context, forcePackageManager: packageManager })
 
+    await clearConsole()
     log(`✨  Creating project in ${chalk.yellow(context)}.`)
     this.emit('creation', { event: 'creating' })
 
@@ -150,7 +159,7 @@ module.exports = class Creator extends EventEmitter {
 
       if (!version) {
         if (isOfficialPlugin(dep) || dep === '@vue/cli-service' || dep === '@vue/babel-preset-env') {
-          version = isTestOrDebug ? `latest` : `~${latestMinor}`
+          version = isTestOrDebug ? `file:${path.resolve(__dirname, '../../../', dep)}` : `~${latestMinor}`
         } else {
           version = 'latest'
         }
@@ -163,18 +172,6 @@ module.exports = class Creator extends EventEmitter {
     await writeFileTree(context, {
       'package.json': JSON.stringify(pkg, null, 2)
     })
-
-    // generate a .npmrc file for pnpm, to persist the `shamefully-flatten` flag
-    if (packageManager === 'pnpm') {
-      const pnpmConfig = hasPnpmVersionOrLater('4.0.0')
-        // pnpm v7 makes breaking change to set strict-peer-dependencies=true by default, which may cause some problems when installing
-        ? 'shamefully-hoist=true\nstrict-peer-dependencies=false\n'
-        : 'shamefully-flatten=true\n'
-
-      await writeFileTree(context, {
-        '.npmrc': pnpmConfig
-      })
-    }
 
     // intilaize git repository before installing deps
     // so that vue-cli-service can setup git hooks.
@@ -238,6 +235,17 @@ module.exports = class Creator extends EventEmitter {
       })
     }
 
+    // generate a .npmrc file for pnpm, to persist the `shamefully-flatten` flag
+    if (packageManager === 'pnpm') {
+      const pnpmConfig = hasPnpmVersionOrLater('4.0.0')
+        ? 'shamefully-hoist=true\n'
+        : 'shamefully-flatten=true\n'
+
+      await writeFileTree(context, {
+        '.npmrc': pnpmConfig
+      })
+    }
+
     // commit initial state
     let gitCommitFailed = false
     if (shouldInitGit) {
@@ -245,7 +253,6 @@ module.exports = class Creator extends EventEmitter {
       if (isTestOrDebug) {
         await run('git', ['config', 'user.name', 'test'])
         await run('git', ['config', 'user.email', 'test@test.com'])
-        await run('git', ['config', 'commit.gpgSign', 'false'])
       }
       const msg = typeof cliOptions.git === 'string' ? cliOptions.git : 'init'
       try {
@@ -270,7 +277,7 @@ module.exports = class Creator extends EventEmitter {
 
     if (gitCommitFailed) {
       warn(
-        `Skipped git commit due to missing username and email in git config, or failed to sign commit.\n` +
+        `Skipped git commit due to missing username and email in git config.\n` +
         `You will need to perform the initial commit yourself.\n`
       )
     }
@@ -330,8 +337,6 @@ module.exports = class Creator extends EventEmitter {
 
     if (name in savedPresets) {
       preset = savedPresets[name]
-    } else if (name === 'default') {
-      preset = savedPresets['Default (Vue 3)']
     } else if (name.endsWith('.json') || /^\./.test(name) || path.isAbsolute(name)) {
       preset = await loadLocalPreset(path.resolve(name))
     } else if (name.includes('/')) {
@@ -402,10 +407,10 @@ module.exports = class Creator extends EventEmitter {
     const presets = this.getPresets()
     const presetChoices = Object.entries(presets).map(([name, preset]) => {
       let displayName = name
-      // Vue version will be showed as features anyway,
-      // so we shouldn't display it twice.
-      if (name === 'Default (Vue 2)' || name === 'Default (Vue 3)') {
+      if (name === 'default') {
         displayName = 'Default'
+      } else if (name === '__default_vue_3__') {
+        displayName = 'Default (Vue 3 Preview)'
       }
 
       return {

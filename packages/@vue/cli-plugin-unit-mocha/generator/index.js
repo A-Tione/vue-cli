@@ -1,17 +1,15 @@
-/** @type {import('@vue/cli').GeneratorPlugin} */
 module.exports = (api, options, rootOptions, invoking) => {
   const isVue3 = rootOptions && rootOptions.vueVersion === '3'
 
   api.render('./template', {
     isVue3,
-    hasTS: api.hasPlugin('typescript'),
-    hasRouter: api.hasPlugin('router')
+    hasTS: api.hasPlugin('typescript')
   })
 
   api.extendPackage({
     devDependencies: {
-      '@vue/test-utils': isVue3 ? '^2.0.0-0' : '^1.1.3',
-      'chai': '^4.2.0'
+      '@vue/test-utils': isVue3 ? '^2.0.0-0' : '^1.0.3',
+      'chai': '^4.1.2'
     },
     scripts: {
       'test:unit': 'vue-cli-service test:unit'
@@ -46,11 +44,10 @@ const applyESLint = module.exports.applyESLint = api => {
 }
 
 const applyTS = module.exports.applyTS = (api, invoking) => {
-  const devDeps = require('../package.json').devDependencies
   api.extendPackage({
     devDependencies: {
-      '@types/mocha': devDeps['@types/mocha'],
-      '@types/chai': devDeps['@types/chai']
+      '@types/mocha': '^5.2.4',
+      '@types/chai': '^4.2.11'
     }
   })
   // inject mocha/chai types to tsconfig.json
@@ -68,7 +65,7 @@ const applyTS = module.exports.applyTS = (api, invoking) => {
             types.push('chai')
           }
         }
-        files['tsconfig.json'] = JSON.stringify(parsed, null, 2) + '\n'
+        files['tsconfig.json'] = JSON.stringify(parsed, null, 2)
       }
     })
   }

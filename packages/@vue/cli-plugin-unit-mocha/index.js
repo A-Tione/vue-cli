@@ -1,8 +1,6 @@
 module.exports = api => {
   api.chainWebpack(webpackConfig => {
     if (process.env.NODE_ENV === 'test') {
-      webpackConfig.mode('none')
-
       webpackConfig.merge({
         target: 'node',
         devtool: 'inline-cheap-module-source-map'
@@ -14,18 +12,16 @@ module.exports = api => {
 
       // when target === 'node', vue-loader will attempt to generate
       // SSR-optimized code. We need to turn that off here.
-      webpackConfig.module
+      // the `optimizeSSR` option is only available in vue-loader 15
+      if (!isVue3) {
+        webpackConfig.module
         .rule('vue')
           .use('vue-loader')
           .tap(options => {
-            if (isVue3) {
-              options.isServerBuild = false
-            } else {
-              options.optimizeSSR = false
-            }
-
+            options.optimizeSSR = false
             return options
           })
+      }
     }
   })
 
@@ -69,13 +65,11 @@ module.exports = api => {
       '--webpack-config',
       require.resolve('@vue/cli-service/webpack.config.js'),
       ...rawArgv,
-      ...(hasInlineFilesGlob
-        ? []
-        : [
-          api.hasPlugin('typescript')
-            ? `tests/unit/**/*.spec.[jt]s`
-            : `tests/unit/**/*.spec.js`
-        ])
+      ...(hasInlineFilesGlob ? [] : [
+        api.hasPlugin('typescript')
+          ? `tests/unit/**/*.spec.ts`
+          : `tests/unit/**/*.spec.js`
+      ])
     ]
 
     return new Promise((resolve, reject) => {
@@ -83,7 +77,7 @@ module.exports = api => {
       child.on('error', reject)
       child.on('exit', code => {
         if (code !== 0) {
-          reject(new Error(`mochapack exited with code ${code}.`))
+          reject(`mochapack exited with code ${code}.`)
         } else {
           resolve()
         }

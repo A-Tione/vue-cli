@@ -84,7 +84,7 @@ sidebarDepth: 3
 
 Генератор должен экспортировать функцию, которая принимает три аргумента:
 
-1. Экземпляр [GeneratorAPI](/dev-guide/generator-api.md);
+1. Экземпляр [GeneratorAPI](generator-api.md);
 
 2. Настройки генератора для плагина. Эти настройки разрешаются с помощью [интерактивных подсказок](#интерактивные-подсказки) во время фазы создания проекта или загружаются из сохранённого пресета в `~/.vuerc`. Например, если сохранённый файл `~/.vuerc` выглядит так:
 
@@ -289,7 +289,7 @@ module.exports.hooks = (api) => {
     const renderIndex = lines.findIndex(line => line.match(/render/))
     lines[renderIndex] += `${EOL}  router,`
 
-    fs.writeFileSync(api.resolve(api.entryFile), lines.join(EOL), { encoding: 'utf-8' })
+    fs.writeFileSync(api.entryFile, lines.join(EOL), { encoding: 'utf-8' })
   })
 }
 ```
@@ -302,7 +302,7 @@ module.exports.hooks = (api) => {
 
 Плагин для сервиса должен экспортировать функцию, которая принимает два аргумента:
 
-- Экземпляр [PluginAPI](/dev-guide/plugin-api.md)
+- Экземпляр [PluginAPI](plugin-api.md)
 
 - Объект, содержащий локальные настройки проекта, указанные в файле `vue.config.js` или в поле `"vue"` файла `package.json`.
 

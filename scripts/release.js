@@ -51,34 +51,31 @@ const release = async () => {
   bumps.forEach(b => { versions[b] = semver.inc(curVersion, b) })
   const bumpChoices = bumps.map(b => ({ name: `${b} (${versions[b]})`, value: b }))
 
-  const { bump, customVersion } = cliOptions['local-registry']
-    ? { bump: 'minor' }
-    : await inquirer.prompt([
-      {
-        name: 'bump',
-        message: 'Select release type:',
-        type: 'list',
-        choices: [...bumpChoices, { name: 'custom', value: 'custom' }]
-      },
-      {
-        name: 'customVersion',
-        message: 'Input version:',
-        type: 'input',
-        when: (answers) => answers.bump === 'custom'
-      }
-    ])
+  const { bump, customVersion } = await inquirer.prompt([
+    {
+      name: 'bump',
+      message: 'Select release type:',
+      type: 'list',
+      choices: [
+        ...bumpChoices,
+        { name: 'custom', value: 'custom' }
+      ]
+    },
+    {
+      name: 'customVersion',
+      message: 'Input version:',
+      type: 'input',
+      when: answers => answers.bump === 'custom'
+    }
+  ])
 
   const version = customVersion || versions[bump]
 
-  const { yes } = cliOptions['local-registry']
-    ? { yes: true }
-    : await inquirer.prompt([
-      {
-        name: 'yes',
-        message: `Confirm releasing ${version}?`,
-        type: 'confirm'
-      }
-    ])
+  const { yes } = await inquirer.prompt([{
+    name: 'yes',
+    message: `Confirm releasing ${version}?`,
+    type: 'confirm'
+  }])
 
   if (yes) {
     await syncDeps({
@@ -88,7 +85,7 @@ const release = async () => {
     })
     delete process.env.PREFIX
 
-    // await buildEditorConfig()
+    // buildEditorConfig()
 
     try {
       await execa('git', ['add', '-A'], { stdio: 'inherit' })

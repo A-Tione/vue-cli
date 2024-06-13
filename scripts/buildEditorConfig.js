@@ -10,19 +10,18 @@
 
 const fs = require('fs')
 const path = require('path')
-const ESLint = require('eslint').ESLint
+const CLIEngine = require('eslint').CLIEngine
 
 // Convert eslint rules to editorconfig rules.
-async function convertRules (config) {
+function convertRules (config) {
   const result = {}
 
-  const eslint = new ESLint({
+  const eslintRules = new CLIEngine({
     useEslintrc: false,
     baseConfig: {
       extends: [require.resolve(`@vue/eslint-config-${config}`)]
     }
-  })
-  const eslintRules = (await eslint.calculateConfigForFile()).rules
+  }).getConfigForFile().rules
 
   const getRuleOptions = (ruleName, defaultOptions = []) => {
     const ruleConfig = eslintRules[ruleName]
@@ -91,7 +90,7 @@ async function convertRules (config) {
   return result
 }
 
-exports.buildEditorConfig = async function buildEditorConfig () {
+exports.buildEditorConfig = function buildEditorConfig () {
   console.log('Building EditorConfig files...')
   // Get built-in eslint configs
   const configList = fs.readdirSync(path.resolve(__dirname, '../packages/@vue/'))
@@ -101,10 +100,10 @@ exports.buildEditorConfig = async function buildEditorConfig () {
     })
     .filter(x => x)
 
-  await Promise.all(configList.map(async config => {
+  configList.forEach(config => {
     let content = '[*.{js,jsx,ts,tsx,vue}]\n'
 
-    const editorconfig = await convertRules(config)
+    const editorconfig = convertRules(config)
 
     // `eslint-config-prettier` & `eslint-config-typescript` do not have any style rules
     if (!Object.keys(editorconfig).length) {
@@ -120,6 +119,6 @@ exports.buildEditorConfig = async function buildEditorConfig () {
       fs.mkdirSync(templateDir)
     }
     fs.writeFileSync(`${templateDir}/_editorconfig`, content)
-  }))
+  })
   console.log('EditorConfig files up-to-date.')
 }

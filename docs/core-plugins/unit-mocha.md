@@ -31,6 +31,6 @@
 
 ## Installing in an Already Created Project
 
-```bash
+``` sh
 vue add unit-mocha
 ```

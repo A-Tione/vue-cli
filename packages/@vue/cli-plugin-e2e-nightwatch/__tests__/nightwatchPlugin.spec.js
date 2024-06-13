@@ -42,27 +42,23 @@ describe('nightwatch e2e plugin', () => {
   })
 
   test('should accept the --url cli option', async () => {
-    let server
-    try {
-      await project.run(`vue-cli-service build`)
-      server = createServer({ root: path.join(project.dir, 'dist') })
-      await new Promise((resolve, reject) => {
-        server.listen(8080, err => {
-          if (err) return reject(err)
-          resolve()
-        })
+    await project.run(`vue-cli-service build`)
+    const server = createServer({ root: path.join(project.dir, 'dist') })
+    await new Promise((resolve, reject) => {
+      server.listen(8080, err => {
+        if (err) return reject(err)
+        resolve()
       })
-      await project.run(`vue-cli-service test:e2e --headless --url http://127.0.0.1:8080/`)
+    })
+    await project.run(`vue-cli-service test:e2e --headless --url http://127.0.0.1:8080/`)
+    server.close()
 
-      let results = await project.read('test_results.json')
-      results = JSON.parse(results)
-      expect(Object.keys(results.modules)).toEqual([
-        'test-with-pageobjects',
-        'test'
-      ])
-    } finally {
-      server && server.close()
-    }
+    let results = await project.read('test_results.json')
+    results = JSON.parse(results)
+    expect(Object.keys(results.modules)).toEqual([
+      'test-with-pageobjects',
+      'test'
+    ])
   })
 
   test('should run single test with custom nightwatch.json', async () => {
@@ -74,7 +70,7 @@ describe('nightwatch e2e plugin', () => {
     ])
   })
 
-  test.skip('should run single test with custom nightwatch.json and selenium server', async () => {
+  test('should run single test with custom nightwatch.json and selenium server', async () => {
     await project.run(`vue-cli-service test:e2e --headless --use-selenium -t tests/e2e/specs/test.js`)
     let results = await project.read('test_results.json')
     results = JSON.parse(results)
@@ -90,7 +86,7 @@ describe('nightwatch e2e plugin', () => {
     ])
   })
 
-  test.skip('should run tests in parallel', async () => {
+  test('should run tests in parallel', async () => {
     await project.run(`vue-cli-service test:e2e --headless --parallel`)
     let results = await project.read('test_results.json')
     results = JSON.parse(results)
@@ -99,10 +95,7 @@ describe('nightwatch e2e plugin', () => {
     testSettings = JSON.parse(testSettings)
 
     expect(testSettings.parallel_mode).toStrictEqual(true)
-    expect(testSettings.test_workers).toStrictEqual({
-      enabled: true,
-      workers: 'auto'
-    })
+    expect(testSettings.test_workers).toStrictEqual(true)
 
     expect(Object.keys(results.modules).sort()).toEqual([
       'test', 'test-with-pageobjects'

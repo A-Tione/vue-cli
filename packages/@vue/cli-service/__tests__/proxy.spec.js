@@ -1,6 +1,6 @@
 jest.setTimeout(30000)
 
-const fetch = require('node-fetch')
+const request = require('request-promise-native')
 const { defaultPreset } = require('@vue/cli/lib/options')
 const create = require('@vue/cli-test-utils/createTestProject')
 const serve = require('@vue/cli-test-utils/serveWithPuppeteer')
@@ -30,22 +30,29 @@ afterAll(() => {
 
 let newId = 1
 async function assertProxy (url, title) {
-  const res = await fetch(`${url}posts/1`).then(result => result.json())
+  const res = await request({
+    url: `${url}posts/1`,
+    json: true
+  })
   expect(res.title).toBe(title)
 
   // POST
   newId++
-  await fetch(`${url}posts`, {
+  await request({
+    url: `${url}posts`,
+    json: true,
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       id: newId,
       title: 'new',
       author: 'test'
-    }),
-    headers: { 'Content-Type': 'application/json' }
+    }
   })
 
-  const newPost = await fetch(`${url}posts/${newId}`).then(result => result.json())
+  const newPost = await request({
+    url: `${url}posts/${newId}`,
+    json: true
+  })
   expect(newPost.title).toBe('new')
 }
 

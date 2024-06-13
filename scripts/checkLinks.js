@@ -1,17 +1,21 @@
 require('events').defaultMaxListeners = 0
 const path = require('path')
 const fs = require('fs')
-const fetch = require('node-fetch')
+const request = require('request-promise-native')
 
 const promises = []
 
 async function checkLink (file, link, n) {
   try {
-    const result = await fetch(link, { method: 'HEAD' })
-    if (result.status !== 200) {
+    const result = await request({
+      method: 'HEAD',
+      uri: link,
+      resolveWithFullResponse: true
+    })
+    if (result.statusCode !== 200) {
       throw new Error('error')
     } else {
-      console.log('[OK]', link, result.status)
+      console.log('[OK]', link, result.statusCode)
     }
   } catch (e) {
     console.warn('[!!]', link, `${file}:${parseInt(n) + 1}`)
